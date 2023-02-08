@@ -1,0 +1,2 @@
+# Just another snake
+I was working on a simple snake using canvas as a way to test tauri, but I started to add a lot of functionalities like events and more so *maybe* this might actually end up as a simple game engine project in the future, we'll see later.
