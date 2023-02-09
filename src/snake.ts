@@ -1,4 +1,6 @@
-type Position = {
+import { sleep } from './utils'
+
+export type Position = {
     x: number,
     y: number,
 }
@@ -51,27 +53,38 @@ type Borders = {
 type SnakeProps = {
     size: number,
     start_position: Position,
+    start_length: number,
     borders: Borders,
     ctx: CanvasRenderingContext2D,
 }
 
 type Events = 'DEATH' | 'WIN'
 
-type EventOptions = {
-    once: boolean
-}
-
 export default class Snake extends MovableObject{
     private borders
     private moving_direction: Directions = 'STOPPED'
     private is_alive = true
+    private body_parts: Position[] = []
+    private length
 
-    constructor({ size, start_position, borders, ctx }: SnakeProps){
+    constructor({ size, start_position, start_length, borders, ctx }: SnakeProps){
         super(size, start_position, ctx)
         this.borders = borders
+        this.length = start_length
+        for(let i = 1; i <= this.length; i++){
+            this.body_parts.push({
+                x: start_position.x - size * i,
+                y: start_position.y,
+            })
+        }
+    }
+
+    get_body_parts(){
+        return this.body_parts
     }
 
     set_moving_direction(direction: Directions){
+        if(!this.is_alive) return
         if(direction === 'RIGHT' && this.get_moving_direction() === 'LEFT') return
         if(direction === 'LEFT' && this.get_moving_direction() === 'RIGHT') return
         if(direction === 'DOWN' && this.get_moving_direction() === 'UP') return
@@ -85,6 +98,10 @@ export default class Snake extends MovableObject{
 
     get_borders(){
         return this.borders
+    }
+
+    get_is_alive(){
+        return this.is_alive
     }
 
     private move(){
@@ -104,21 +121,44 @@ export default class Snake extends MovableObject{
             this.update_position({
                 add_x: 50,
             })  
-        if(this.get_position().x > this.get_borders().right) {
-            this.is_alive = false
-            this.set_moving_direction('STOPPED')
-        }
+        this.check_collisions()
     }
 
-    on(event_type: Events, callback: () => void, options?: EventOptions){
-        if(event_type === 'DEATH' && !this.is_alive)
-            callback()
+    private move_body_parts(){
+        if(this.get_moving_direction() === 'STOPPED') return
+        this.body_parts[1] = this.body_parts[0] 
+        this.body_parts[0] = this.get_position()
+        
+    }
+
+    private check_collisions(){
+        if(this.get_position().x > this.get_borders().right) 
+            this.kill()
+        if(this.get_position().x < this.get_borders().left)
+            this.kill()
+        if(this.get_position().y > this.get_borders().down)
+            this.kill()
+        if(this.get_position().y < this.get_borders().up)
+            this.kill()
+    }
+
+    private kill(){
+        this.is_alive = false
+        this.set_moving_direction('STOPPED')   
+    }
+
+    async on(event_type: Events, callback: () => void){
+        if(event_type !== 'DEATH') return
+        while(this.is_alive)
+            await sleep(10)
+        callback()
     }
 
     /**
      * Calls to this function will update the state of the snake
      */
     update(){
+        this.move_body_parts()
         this.move()
     }
 }

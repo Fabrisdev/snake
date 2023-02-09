@@ -1,15 +1,16 @@
 import { sleep } from './utils'
 import Snake from './snake'
+import { death_animation } from './animations'
 
-const CANVAS_SIZE = 500
+const CANVAS_SIZE = 550
 const BORDERS = {
-    right: 450,
+    right: 500,
     left: 0,
     up: 0,
-    down: 450,
+    down: 500,
 }
 const SNAKE_SIZE = 50
-const NEXT_FRAME_WAIT = 250
+const NEXT_FRAME_WAIT = 1000
 
 const canvas = document.querySelector('#game') as HTMLCanvasElement
 canvas.width = CANVAS_SIZE
@@ -20,9 +21,10 @@ if(!ctx) throw '¿Tu navegador no soporta canvas? Yo que tú me compraría una p
 const snake = new Snake({
     size: SNAKE_SIZE,
     start_position: {
-        x: 0,
+        x: 200,
         y: 0,
     },
+    start_length: 3,
     borders: BORDERS,
     ctx,
 })
@@ -34,10 +36,7 @@ async function draw_loop(){
     ctx.fillStyle = '#222'
     ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE)
 
-    //SNAKE
-    ctx.fillStyle = '#444'
-    snake.update()
-    ctx.fillRect(snake.get_position().x, snake.get_position().y, SNAKE_SIZE, SNAKE_SIZE)
+    draw_snake()
 
     //DRAW GRID
     for(let i = 0; i < CANVAS_SIZE; i += SNAKE_SIZE){
@@ -45,15 +44,28 @@ async function draw_loop(){
             ctx.strokeRect(i, j, SNAKE_SIZE, SNAKE_SIZE)
         }
     }
-    console.log(snake.get_position())
     key_press_allowed = true
     await sleep(NEXT_FRAME_WAIT)
     draw_loop()
 }
 
 snake.on('DEATH', () => {
-    ctx.fillStyle = '#f00'
+    console.log('muerto')
+    death_animation(ctx, SNAKE_SIZE)
 })
+
+function draw_snake(){
+    if(!ctx) throw '¿Tu navegador no soporta canvas? Yo que tú me compraría una pc xd'
+    if(!snake.get_is_alive()) return
+    const snake_body = snake.get_body_parts()
+    ctx.fillStyle = '#444'
+    snake.update()
+    snake_body.map(part => {
+        ctx.fillRect(part.x, part.y, SNAKE_SIZE, SNAKE_SIZE)
+    })
+    ctx.fillStyle = '#555'
+    ctx.fillRect(snake.get_position().x, snake.get_position().y, SNAKE_SIZE, SNAKE_SIZE)
+}
 
 draw_loop()
 
